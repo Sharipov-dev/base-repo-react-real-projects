@@ -107,6 +107,19 @@ Do not mix server and client code in the same file.
 | `BACKEND_URL` | Server | Backend base URL (not exposed to browser) |
 | `NEXT_PUBLIC_BACKEND_URL` | Client | Backend base URL (exposed to browser) |
 
+## Design to code
+
+When the user provides a screenshot or mockup:
+
+1. Read the image file directly (Claude Code supports PNG, JPG, etc.).
+2. Break the design into components following the layer rules: reusable pieces → `shared/ui/`, feature-specific → `features/<name>/ui/`.
+3. Use **Tailwind CSS only**. Match the design's spacing, colors, and typography. Use our custom config: Inter font, accent `#10B981`.
+4. Reuse existing `shared/ui` components (Button, etc.) before creating new ones.
+5. Type all component props with explicit interfaces.
+6. Design screenshots live in `docs/designs/` for reference.
+
+See `docs/design-to-code.md` for full workflow and prompt templates.
+
 ## Do not
 
 - Use `pages/` router patterns.

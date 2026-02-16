@@ -1,129 +1,145 @@
-# CLAUDE.md — Project Context for Claude Code
+# CLAUDE.md — Project Rules for AI-Assisted Development
 
-## Project
+## Project Overview
 
-RoadTrack frontend. Next.js 15 (App Router), React 19, TypeScript 5, Tailwind CSS.
-Authentication via Supabase. Business data from a custom backend. React Query on client.
+RoadTrack frontend. Next.js 15 App Router, TypeScript strict, Tailwind CSS, Supabase Auth, custom backend API.
+
+## Project Rules
+
+- Server Components by default. Only use `'use client'` when interactivity is required.
+- All imports use `@/` path alias. No relative traversals (`../../`).
+- No `any` types. No `as Type` assertions on API data. Use Zod validation.
+- No `console.log` in production code. Use proper error handling.
+- All route paths come from `@/shared/config/routes.ts`. No hardcoded path strings.
+- All env vars come from `@/shared/config/env.ts`. No direct `process.env` access.
+
+## Architecture Rules
+
+Five layers, strict dependency direction:
+
+```
+app/ → widgets/ → modules/ → services/ → shared/
+```
+
+- `app/` imports from any layer.
+- `widgets/` imports from `shared/` only. Receives data as props.
+- `modules/` imports from `services/` and `shared/`. Never from other modules.
+- `services/` imports from `shared/` only.
+- `shared/` imports from nothing internal. Only external packages.
+
+## Folder Responsibilities
+
+| Folder | Contains | Does NOT contain |
+|---|---|---|
+| `src/app/` | Pages, layouts, API routes, loading/error boundaries | Business logic, API clients, reusable components |
+| `src/modules/` | Domain logic: API functions, types, domain UI, mappers | Infrastructure clients, generic UI, route definitions |
+| `src/services/` | Supabase clients, fetch wrapper, auth guards, error classes | Business logic, UI components, domain types |
+| `src/shared/` | Generic UI, config, hooks, utilities | Domain logic, API calls, Supabase code |
+| `src/widgets/` | Layout blocks (Header, Sidebar, PageShell) | Business logic, API calls, page content |
+
+## Supabase Rules
+
+- Browser client: `@/services/supabase/client.ts` → `createClient()`.
+- Server client: `@/services/supabase/server.ts` → `createServerSupabaseClient()`.
+- Middleware: `@/services/supabase/middleware.ts` → `updateSession()`.
+- **Only `modules/auth/` and `services/auth/` may call Supabase auth methods directly.**
+- **Other modules never import from `@/services/supabase/`.** They use `backendFetch` with an `accessToken`.
+
+## Backend Integration Rules
+
+- All backend API calls go through `backendFetch<T>()` from `@/services/http/backendClient.ts`.
+- No raw `fetch()` to the backend anywhere.
+- Server-side: pass `accessToken` from `getAccessToken()`.
+- Client-side: pass `accessToken` from `supabase.auth.getSession()`.
+- All responses must be validated with Zod schemas before use.
+- All DTOs must be mapped to UI models via mapper functions.
+- Errors are instances of `BackendError` from `@/services/http/errors.ts`.
+
+## Code Generation Constraints
+
+When generating code:
+- **Do not rewrite files you did not change.** Output only modified files.
+- **Do not add features beyond what was requested.**
+- **Do not refactor surrounding code** when fixing a bug or adding a feature.
+- **Do not add comments, docstrings, or type annotations** to code you did not modify.
+- **Do not create utility abstractions** for one-time operations.
+- **Do not add error handling** for scenarios that cannot occur.
+- **Keep responses concise.** No preamble, no summary unless requested.
+
+## Performance Guidelines
+
+- Use server components for data fetching. Avoid client-side fetch when server fetch is possible.
+- React Query (`staleTime: 60s`, `retry: 1`) is configured in `app/providers.tsx`.
+- Avoid unnecessary `'use client'` — it creates a client bundle boundary.
+- Colocate data fetching with the component that needs it (in server components).
+
+## Token Optimization Strategy
+
+When responding to requests:
+- Output only changed files, not the entire codebase.
+- Use edit-style responses (show what changed) for small modifications.
+- For new files, show complete content.
+- Do not repeat unchanged code blocks.
+- Do not explain patterns already documented in `docs/`.
+- Reference `docs/` files instead of re-explaining architecture.
+
+## How Claude Should Respond
+
+1. Read relevant files before modifying them.
+2. Follow existing patterns in the codebase.
+3. Place files in the correct layer per the architecture rules.
+4. Use existing utilities (`backendFetch`, `Button`, `ROUTES`, `env`).
+5. Validate API responses with Zod.
+6. Map DTOs to UI models.
+7. Export from `index.ts` barrel files.
+8. Add new routes to `ROUTES` and relevant path arrays in `routes.ts`.
+9. Keep responses focused on what was asked.
+
+## How To Add a New Module
+
+```
+src/modules/<domain>/
+├── api/<domain>.api.ts       # backendFetch calls, returns UI models
+├── model/types.ts            # DTO + UI model interfaces
+├── model/schema.ts           # Zod schemas for DTO validation
+├── ui/<Component>.tsx        # Domain-specific React components
+├── lib/map<Entity>.ts        # DTO → UI model mapper
+└── index.ts                  # Public exports only
+```
+
+Steps:
+1. Create the directory structure above.
+2. Define DTO (snake_case) and UI model (camelCase) types.
+3. Create Zod schema matching the DTO.
+4. Create mapper function.
+5. Create API functions using `backendFetch` with `accessToken` parameter.
+6. Create UI components receiving data as props.
+7. Export public API from `index.ts`.
+
+## How To Add a New Protected Route
+
+1. Create `src/app/(protected)/<route>/page.tsx`.
+2. Add the path string to `PROTECTED_PATHS` in `src/shared/config/routes.ts`.
+3. Add a named key to the `ROUTES` object.
+4. Add navigation entry in `widgets/Sidebar/Sidebar.tsx` if needed.
+5. The existing `(protected)/layout.tsx` handles auth and PageShell automatically.
+
+## How To Add a New Public Route
+
+1. Create `src/app/(public)/<route>/page.tsx`.
+2. Add to `ROUTES` object if navigation links are needed.
+
+## How To Add a New Auth Route
+
+1. Create `src/app/(auth)/<route>/page.tsx`.
+2. Add the path to `AUTH_ROUTES` in `src/shared/config/routes.ts`.
+3. Add to `ROUTES` object.
 
 ## Commands
 
 ```bash
-npm run dev      # Start dev server (port 3000)
-npm run build    # Production build
-npm run lint     # ESLint
-npx tsc --noEmit # Type-check without emitting
+npm run dev       # Start development server
+npm run build     # Production build (includes type checking)
+npm run lint      # ESLint
+npm start         # Start production server
 ```
-
-## Architecture (feature-sliced)
-
-```
-src/
-  app/            # Next.js routes, layouts, API routes (BFF)
-  features/       # Business features (auth, orders, …)
-  entities/       # Domain types (user, order, …)
-  shared/         # Reusable infra: API clients, auth helpers, UI components
-  middleware.ts   # Route protection (Supabase session check)
-```
-
-### Layers — dependency rule
-
-`app → features → entities → shared`. Never import upward. `shared` imports nothing from the project.
-
-### Feature structure
-
-Every feature follows:
-```
-features/<name>/
-  ui/           # React components ("use client" only here)
-  model/        # Hooks, state logic
-  api/          # *.client.ts (browser), *.server.ts (server-only)
-  types.ts      # Feature-specific types/DTOs
-  index.ts      # Public API barrel export
-```
-
-Only import features through their `index.ts`. Never reach into internal paths from outside the feature.
-
-### Server vs Client files
-
-- `*.server.ts` — runs only on the server. Must import `'server-only'` at the top. Can access cookies, headers, env vars without `NEXT_PUBLIC_` prefix.
-- `*.client.ts` — runs in the browser. Must have `'use client'` at the top when containing hooks/components. Uses `NEXT_PUBLIC_*` env vars only.
-
-Do not mix server and client code in the same file.
-
-## Key conventions
-
-- **TypeScript strict mode**. No `any`. No `@ts-ignore`. Explicitly type function params and return types for public APIs.
-- **`"use client"` only where needed** — components with hooks, event handlers, or browser APIs. Pages and layouts stay as server components unless they must be client.
-- **Imports use `@/*` alias** (maps to `src/*`). No relative imports that escape the current layer.
-- **No default exports** except for Next.js pages/layouts/route handlers (required by framework).
-- **Naming**: PascalCase for components/types, camelCase for functions/variables, kebab-case for directories.
-- **Short files**. One component/hook/function per file. Max ~100 lines per file — split if larger.
-
-## Auth flow
-
-1. Supabase handles sessions via cookies (`@supabase/ssr`).
-2. `middleware.ts` intercepts protected routes, calls `supabase.auth.getUser()`, redirects to `/login` if no session.
-3. Server components call `requireSession()` from `shared/lib/auth/session.server.ts`.
-4. Client login goes through `features/auth/api/auth.client.ts` → Supabase `signInWithPassword`.
-5. **Never store tokens in localStorage.** Supabase SSR handles cookie-based storage.
-
-## API calls
-
-- **Browser → backend**: Use `clientFetch()` from `shared/api/client/apiClient.client.ts`. Base URL: `NEXT_PUBLIC_BACKEND_URL`.
-- **Server → backend**: Use `serverFetch()` from `shared/api/client/apiClient.server.ts`. Base URL: `BACKEND_URL`. Forwards cookies/auth headers.
-- **BFF routes** (`app/api/*`): Only when the client cannot call the backend directly (e.g., file uploads, secret API keys). Validate session before proxying.
-- **DTO mapping**: Backend responses (snake_case) are mapped to domain types (camelCase) in `shared/api/mapping/dto.ts`.
-- **Error handling**: All API errors normalize to `ApiError` / `NetworkError` / `AbortError` from `shared/api/client/errors.ts`.
-- **Retry**: `withRetry()` from `shared/api/client/retry.ts` — exponential backoff, retries only 5xx by default.
-
-## React Query
-
-- `QueryProvider` lives in `app/providers.tsx` (wraps entire app).
-- Query hooks live in `features/<name>/model/use*Query.ts`.
-- Query keys: `['resource-name', params]`.
-- Default stale time: 60s. Default retry: 1.
-
-## Adding a new feature
-
-1. Create `src/features/<name>/` with `ui/`, `model/`, `api/`, `types.ts`, `index.ts`.
-2. Domain types go in `src/entities/<name>/types.ts` + `index.ts`.
-3. If a new DTO is needed, add mapper in `shared/api/mapping/dto.ts`.
-4. If a new protected route, add the segment to `PROTECTED_SEGMENTS` in `middleware.ts`.
-5. Export public API from `features/<name>/index.ts`.
-
-## Adding a new API route (BFF)
-
-1. Create `src/app/api/<name>/route.ts`.
-2. Check auth with `getSession()` or `requireSession()`.
-3. Proxy to backend using `serverFetch()` or raw `fetch` for non-JSON (e.g., form data).
-4. Never expose server-only secrets to the response.
-
-## Environment variables
-
-| Variable | Side | Purpose |
-|---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Both | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Both | Supabase anonymous key |
-| `BACKEND_URL` | Server | Backend base URL (not exposed to browser) |
-| `NEXT_PUBLIC_BACKEND_URL` | Client | Backend base URL (exposed to browser) |
-
-## Design to code
-
-When the user provides a screenshot or mockup:
-
-1. Read the image file directly (Claude Code supports PNG, JPG, etc.).
-2. Break the design into components following the layer rules: reusable pieces → `shared/ui/`, feature-specific → `features/<name>/ui/`.
-3. Use **Tailwind CSS only**. Match the design's spacing, colors, and typography. Use our custom config: Inter font, accent `#10B981`.
-4. Reuse existing `shared/ui` components (Button, etc.) before creating new ones.
-5. Type all component props with explicit interfaces.
-6. Design screenshots live in `docs/designs/` for reference.
-
-See `docs/design-to-code.md` for full workflow and prompt templates.
-
-## Do not
-
-- Use `pages/` router patterns.
-- Add UI libraries (no MUI, Chakra, etc.) — use Tailwind + `shared/ui` components.
-- Put business logic in `app/` — pages only compose features.
-- Import from `node_modules` without checking if it's already a dependency in `package.json`.
-- Create files outside the established layer structure without discussion.

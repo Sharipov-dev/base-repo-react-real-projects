@@ -40,8 +40,8 @@ Frontend-only. No backend changes. Preferences persist in `localStorage` per tab
 
 ## DataTable enhancements
 
-Two small, additive, backward-compatible props are needed to migrate Receipts without
-losing behavior. Both are optional and leave the Organization table and all current
+Three small, additive, backward-compatible changes are needed to migrate Receipts without
+losing behavior. All are optional and leave the Organization table and all current
 behavior untouched.
 
 ### `onRowClick?: (row: T) => void`
@@ -56,10 +56,18 @@ the actions cell) so the action buttons and row-click do not conflict.
 
 ### `RowAction.hidden?: (row: T) => boolean`
 
-Receipts has a conditional "Close" action that only applies to certain statuses, opening
-`PartialReceiptModal`. Today `rowActions` render unconditionally on every row. Add an
-optional `hidden?(row)` predicate to `RowAction`; when it returns `true`, that action is
-not rendered for that row. Existing actions (no predicate) always render, unchanged.
+Receipts has conditional "Close" and "Delete" actions that only apply when
+`status === 'pending'` (Close opens `PartialReceiptModal`). Today `rowActions` render
+unconditionally on every row. Add an optional `hidden?(row)` predicate to `RowAction`;
+when it returns `true`, that action is not rendered for that row. Existing actions (no
+predicate) always render, unchanged.
+
+### `RowAction.icon` may be a function
+
+Receipts' Close action shows a per-row spinner while its detail is loading. Widen
+`RowAction.icon` from `React.ReactNode` to `React.ReactNode | ((row: T) => React.ReactNode)`.
+Static-node icons (every current action) keep working unchanged; the renderer calls the
+function form per row when provided.
 
 ## Per-table specification
 
@@ -72,65 +80,80 @@ all columns visible. The Actions column is always present and is never part of t
 - **File:** `src/modules/customer/ui/CustomerTable.tsx`
 - **Row type:** `Customer`. **Hook:** `listCustomers(page, pageSize, accessToken)`, pageSize 20.
 - **Columns:**
-  1. `name` — entity (icon + name, alias as secondary line)
-  2. `email` — `email`
-  3. `phone` — `phone`
-  4. `company` — `company`
-  5. `location` — custom cell (city, state, country combined)
-- **Row actions:** View, Edit, Delete.
-- **Toolbar:** built-in search (client-side filter on name/alias/email/phone/city/state/country/contact fields — preserved), Download button, Add button.
-- **Modals preserved:** `CustomerDetailsPanel`, `CustomerEditForm`, delete confirmation.
+  1. `name` — custom cell (violet icon + name + `ID: {id.slice(0,8)}` secondary line)
+  2. `email` — custom cell (`email ?? '-'`)
+  3. `phone` — custom cell (`phone ?? '-'`)
+  4. `company` — custom cell (`alias ?? name`)
+  5. `location` — custom cell (`[city, state].filter(Boolean).join(', ') || country`)
+- **Row actions:** View (navigates to `ROUTES.customerDetail(id)` — current behavior; the
+  eye icon is a `Link` today, becomes a `router.push`), Edit, Delete.
+- **Toolbar:** built-in search (client-side filter on name/alias/email/phone/city/state/country/contact fields — preserved), Export button, Create Customer link. The existing
+  non-functional "Customize View" placeholder button (and its `SettingsIcon`) is removed —
+  the real Columns picker replaces it.
+- **Modals preserved:** `CustomerEditForm` (Edit), delete confirmation. (`CustomerDetailsPanel`
+  is currently unreachable dead code reached by no path; left untouched.)
 - **Search:** client-side. `onSearchChange` updates local search state; data is filtered
   before being passed to `DataTable`.
 
 ### Receipts — `columnVisibilityKey="receipts"`
 
 - **File:** `src/modules/receipt/ui/ReceiptTable.tsx`
-- **Row type:** `Receipt`. **Hook:** `listReceipts(page, pageSize, search, accessToken)`, pageSize 20.
+- **Row type:** `Receipt`. **Hook:** `listReceipts({ page, pageSize }, accessToken)`, pageSize 20.
 - **Columns:**
-  1. `receiptNumber` — `id` / receipt number
-  2. `reference` — `reference`
-  3. `customer` — custom cell (customer link/name)
-  4. `warehouse` — custom cell (warehouse badge)
-  5. `status` — `status` type with `colorMap` (pending / received / partial / processed / cancelled)
+  1. `receiptNumber` — custom cell (`receiptNumber`, mono blue)
+  2. `reference` — custom cell (`referenceNumber`)
+  3. `customer` — custom cell (`customerName`)
+  4. `warehouse` — custom cell (`warehouseName`)
+  5. `status` — custom cell (badge via `STATUS_COLORS`: pending / received / partial / processed / cancelled)
   6. `lines` — custom cell (`lineCount`)
-  7. `date` — `date`
-- **Row actions:** View (via `onRowClick`, opens detail panel), Close (conditional via
-  `RowAction.hidden`, opens `PartialReceiptModal`), Delete.
-- **Toolbar:** built-in search (server-side), Create Receipt button.
-- **Modals preserved:** `CreateReceiptModal`, `ReceiptDetailPanel`, `PartialReceiptModal`,
-  delete confirmation.
-- **Search:** server-side via `dSearch` query param (unchanged).
+  7. `date` — custom cell (`receiptDate`)
+- **Row actions:** View (eye icon, opens the line-items modal via `handleView`), Close
+  (conditional via `RowAction.hidden`, only `status === 'pending'`; opens `PartialReceiptModal`
+  on shortfall; uses function `icon` for the loading spinner), Delete (conditional, only
+  `status === 'pending'`).
+- **Row click:** navigates to `ROUTES.receiptDetail(id)` via the new `onRowClick`
+  (preserves current row-click behavior — distinct from the eye-icon modal).
+- **Toolbar:** New Receipt button only. **No search box** (the list hook takes no search
+  param and none exists today — do not pass `onSearchChange`).
+- **Title:** none today (page renders its own header); title/subtitle move into `DataTable`
+  and the redundant page-level header in `receipts/page.tsx` is removed.
+- **Modals preserved:** `CreateReceiptModal`, `ReceiptDetailPanel` (view modal),
+  `PartialReceiptModal`, delete confirmation.
 
 ### Items — `columnVisibilityKey="items"`
 
 - **File:** `src/modules/item/ui/ItemTable.tsx`
 - **Row type:** `Item`. **Hook:** `listItems(page, pageSize, search, accessToken)`, pageSize 20.
 - **Columns:**
-  1. `sku` — custom cell (monospace, blue)
-  2. `name` — `name`
-  3. `category` — custom cell (badge)
-  4. `uom` — `uom`
-  5. `tracking` — custom cell (badge: Serial / Expiry / None)
-  6. `status` — `status` type with `colorMap`
+  1. `sku` — custom cell (`sku`, monospace blue)
+  2. `name` — custom cell (`name`)
+  3. `category` — custom cell (`category ?? '—'`)
+  4. `uom` — custom cell (`secondaryUom ?? '—'`)
+  5. `tracking` — custom cell (SN / LOT / EXP badges from serial/lot/expiry tracking flags)
+  6. `status` — custom cell rendering the legacy `StatusBadge status={isActive ? 'active' : 'passive'}`
 - **Row actions:** View, Edit, Delete.
-- **Toolbar:** built-in search (server-side, SKU or name), Add Item button (links to create route).
+- **Toolbar:** built-in search (server-side, SKU or name; resets page to 1), Create Item link.
+- **Title:** none today (page renders its own header); title/subtitle move into `DataTable`
+  and the redundant page-level header in `items/page.tsx` is removed.
 - **Modals preserved:** `ItemDetailsPanel`, `ItemEditForm`, delete confirmation.
 
 ### Inventory — `columnVisibilityKey="inventory"`
 
 - **File:** `src/modules/inventory/ui/InventoryTable.tsx`
-- **Row type:** `Inventory`. **Hook:** `listInventory(page, pageSize, search, accessToken)`, pageSize 20.
-- **Columns:**
-  1. `sku` — custom cell (monospace, blue)
-  2. `itemName` — `itemName`
-  3. `warehouse` — custom cell (name + code)
-  4. `onHand` — custom cell (formatted number)
-  5. `available` — custom cell (formatted number, green)
-  6. `reserved` — custom cell (formatted number, orange)
-  7. `shelfLocation` — `shelfLocation`
+- **Row type:** inventory entry. **Hook:** `listInventory({ page, pageSize, search }, accessToken)`, pageSize 20.
+- **Columns (9):**
+  1. `sku` — custom cell (`itemSku`, monospace blue)
+  2. `itemName` — custom cell (`itemName`)
+  3. `location` — custom cell (`locationCode`)
+  4. `quantity` — custom cell (`quantity`)
+  5. `allocated` — custom cell (`allocatedQuantity`)
+  6. `available` — custom cell (`availableQuantity`, green if > 0 else red)
+  7. `lotNumber` — custom cell (`lotNumber ?? '-'`)
+  8. `expiry` — custom cell (`expiryDate` formatted or `-`)
+  9. `updated` — custom cell (`updatedAt` formatted date)
 - **Row actions:** none.
-- **Toolbar:** built-in search (server-side, SKU), Extended View / Adjust / Move nav links.
+- **Toolbar:** built-in search (server-side, SKU; resets page to 1), Extended View / Adjust / Move nav links.
+- **Title:** in-component title ("Inventory" / "Real-time stock levels") moves into `DataTable`; page wrapper unchanged.
 - **Modals preserved:** none.
 
 ### Transaction History — `columnVisibilityKey="inventory-transactions"`
@@ -148,8 +171,10 @@ all columns visible. The Actions column is always present and is never part of t
   7. `reference` — custom cell (`referenceType`)
   8. `date` — custom cell (`createdAt`, date + time)
 - **Row actions:** none.
-- **Toolbar:** type-filter `<select>` (preserved in `toolbar`), total-records count. No search box
-  (do not pass `onSearchChange`).
+- **Toolbar:** type-filter `<select>` (preserved in `toolbar`, resets page to 1),
+  total-records count. No search box (do not pass `onSearchChange`).
+- **Title:** in-component title ("Transaction History") moves into `DataTable`; the
+  redundant `p-6` wrapper in `inventory/transactions/page.tsx` is removed.
 - **Modals preserved:** none.
 
 ## Badge rendering rule
@@ -187,11 +212,14 @@ For each migrated table:
 
 ## Files touched
 
-- `src/shared/ui/DataTable/DataTable.tsx` — add `onRowClick` and `RowAction.hidden`.
+- `src/shared/ui/DataTable/DataTable.tsx` — add `onRowClick`, `RowAction.hidden`, and function `RowAction.icon`.
 - `src/modules/customer/ui/CustomerTable.tsx`
 - `src/modules/receipt/ui/ReceiptTable.tsx`
+- `src/app/(protected)/receipts/page.tsx` — remove redundant page header/wrapper.
 - `src/modules/item/ui/ItemTable.tsx`
+- `src/app/(protected)/items/page.tsx` — remove redundant page header/wrapper.
 - `src/modules/inventory/ui/InventoryTable.tsx`
 - `src/modules/inventory/ui/InventoryTransactionsTable.tsx`
+- `src/app/(protected)/inventory/transactions/page.tsx` — remove redundant `p-6` wrapper.
 
 No new files.

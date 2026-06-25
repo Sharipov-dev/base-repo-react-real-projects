@@ -16,7 +16,7 @@ subsequent phases extend it to the remaining tables.
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Table Export Infrastructure + Organizations** - Export utilities, ExportModal, DataTable wiring, and Organizations table wired
-- [ ] **Phase 2: Export Rollout to DataTable Tables** - Wire export onto the 8 DataTable-based tables: locations, customers, users, roles, receipts, items, inventory, and inventory transaction history
+- [x] **Phase 2: Export Rollout to DataTable Tables** - Wire export onto the 8 DataTable-based tables: locations, customers, users, roles, receipts, items, inventory, and inventory transaction history
 - [ ] **Phase 3: Migrate + Export Legacy Tables** - Migrate warehouses and customer contacts to DataTable, then wire export onto them
 
 ## Phase Details
@@ -50,11 +50,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Wire export onto Locations + Customers (client-filter-aware; remove dead Customers Export button)
-- [ ] 02-02-PLAN.md — Wire export onto Users + Roles (roleId→name resolution; search threading)
-- [ ] 02-03-PLAN.md — Wire export onto Receipts + Items (status/search threading; string dates; composite tracking)
-- [ ] 02-04-PLAN.md — Wire export onto Inventory + Inventory Transactions (inline-typed; inventoryId label; type/search threading)
-- [ ] 02-05-PLAN.md — Phase verify: `npm run build` + manual export smoke-check across all 8 tables
+- [x] 02-01-PLAN.md — Wire export onto Locations + Customers (client-filter-aware; remove dead Customers Export button)
+- [x] 02-02-PLAN.md — Wire export onto Users + Roles (roleId→name resolution; search threading)
+- [x] 02-03-PLAN.md — Wire export onto Receipts + Items (status/search threading; string dates; composite tracking)
+- [x] 02-04-PLAN.md — Wire export onto Inventory + Inventory Transactions (inline-typed; inventoryId label; type/search threading)
+- [x] 02-05-PLAN.md — Phase verify: `npm run build` + manual export smoke-check across all 8 tables
 
 ### Phase 3: Migrate and Export Legacy Tables
 **Goal**: Convert `WarehouseTable` and `CustomerContactsManager` from legacy `TableHelpers` markup to the shared `DataTable` component, then wire CSV/Excel export onto them following the Phase 2 pattern.
@@ -76,5 +76,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Table Export Infrastructure + Organizations | 7/7 | Complete | 2026-06-24 |
-| 2. Export Rollout to DataTable Tables | 0/5 | Not started | - |
-| 3. Migrate and Export Legacy Tables | 0/TBD | Not started | - |
+| 2. Export Rollout to DataTable Tables | 5/5 | Complete | 2026-06-25 |
+| 3. Migrate and Export Legacy Tables | 0/TBD | In progress | - |

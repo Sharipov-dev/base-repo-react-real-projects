@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-07-10T13:22:34.228Z"
+last_updated: "2026-07-10T13:30:55.235Z"
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 13
-  completed_plans: 6
-  percent: 46
+  completed_plans: 7
+  percent: 54
 ---
 
 # Project State — BorderworxWMS
@@ -72,4 +72,7 @@ progress:
 - Decision: receipt-config create-field defaults (`?? false` / `?? 0`) mirror `PrismaReceiptConfigRepository.upsert`'s create branch exactly.
 - **05-04 complete** (frontend data layer + shared form): `ReceiptConfigDTO`/`ReceiptConfig`/`ReceiptConfigRequest`/`ReceiptConfigFormValues` types + `receiptConfigDTOSchema`/`receiptConfigRequestSchema` Zod schemas added to `customer/model/{types,schema}.ts` (fuel surcharge 0-100, 2dp); `mapReceiptConfig` mapper; `emptyReceiptConfigValues`/`receiptConfigToFormValues`/`receiptFormValuesToRequest` form helpers; `getReceiptConfig`/`upsertReceiptConfig` API calls hitting the Plan 02 HTTP endpoints; shared, presentational `ReceiptSettingsForm` component (values + onChange props, no local state) rendering GENERAL SETTINGS + MOBILE RECEIVING (SMARTSCAN) groups per the screenshot, exported via the module barrel. Frontend typechecks (only pre-existing `warehouse.api.test.ts` errors remain). See `.planning/phases/05-customer-receipts-tab-replace-the-empty-available-after-the-/05-04-SUMMARY.md`.
 - Decision: `updateCustomerSchema` omits `receiptConfig` (edit-path persists via the dedicated `upsertReceiptConfig` endpoint, not the customer `PATCH` body).
-- Next: Plan 05 wires `ReceiptSettingsForm` into `CreateCustomerForm.tsx`'s Receipts tab (replacing `PlaceholderPanel`) and into `CustomerTable.tsx`'s edit modal, using this plan's helpers/API for state + persistence.
+- **05-05 complete** (both customer UI surfaces wired, Phase 05 now fully implemented end-to-end): `CreateCustomerForm.tsx` Receipts tab renders the shared `ReceiptSettingsForm` (placeholder removed); `toRequest(values, receiptValues)` always includes `receiptConfig` in the create payload so it persists atomically with the customer (D-06). `CustomerTable.tsx`'s `CustomerEditForm` gained an `accessToken` prop, loads the current config on modal open via `getReceiptConfig`, renders the same shared form under a "Receipts" heading, and persists via `upsertReceiptConfig(customer.id, ...)` after the existing customer update succeeds (D-07). Frontend build and `tsc --noEmit` both green (only the 4 pre-existing `warehouse.api.test.ts` errors remain). See `.planning/phases/05-customer-receipts-tab-replace-the-empty-available-after-the-/05-05-SUMMARY.md`.
+- Decision: `toRequest` now takes `receiptValues` as a second argument so `createCustomerSchema.safeParse` validates fuel-surcharge range/precision; errors surface via a new `receiptError` state on the create form.
+- Decision: edit-modal receipt-config save has no dedicated client-side zod validation (matching the rest of `CustomerEditForm`); backend `receiptConfigRequestSchema` still enforces 0-100/2dp, surfaced through the existing `serverError` catch.
+- Phase 05 (Customer Receipts tab) complete: backend persistence, HTTP layer, atomic create-time persistence, frontend data layer + shared form, and both UI surfaces (create + edit) all shipped across 05-01 through 05-05.

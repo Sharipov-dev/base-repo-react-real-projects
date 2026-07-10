@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-07-10T13:12:51.775Z"
+last_updated: "2026-07-10T13:22:34.228Z"
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 5
-  percent: 38
+  completed_plans: 6
+  percent: 46
 ---
 
 # Project State — BorderworxWMS
@@ -70,4 +70,6 @@ progress:
 - Decision: `get()` calls `toReceiptConfigResponse(config)` directly with no null branch, since `GetReceiptConfigUseCase` always returns a defaulted `ReceiptConfig` (D-06) — unlike packing-slip-config's nullable get.
 - **05-03 complete** (backend atomic create-time persistence): `createCustomerSchema`/`CreateCustomerData` gained an optional `receiptConfig` field (D-06); `PrismaCustomerRepository.create()` extends the existing Phase-4 `$transaction` with a conditional `tx.customerReceiptConfig.create` alongside the existing conditional `tx.customerContact.create` — customer + primary contact + receipt config all roll back together on any failure. `CreateCustomerUseCase`/`customer.controller.ts` untouched (pass-through precedent preserved). Backend build green. See `.planning/phases/05-customer-receipts-tab-replace-the-empty-available-after-the-/05-03-SUMMARY.md`.
 - Decision: receipt-config create-field defaults (`?? false` / `?? 0`) mirror `PrismaReceiptConfigRepository.upsert`'s create branch exactly.
-- Next: Plans 04/05 (frontend receipt-config types/schema/API, shared `ReceiptSettingsForm`, and wiring the Receipts tab in create + edit) build directly on this atomic create endpoint and the Plan 02 HTTP endpoints.
+- **05-04 complete** (frontend data layer + shared form): `ReceiptConfigDTO`/`ReceiptConfig`/`ReceiptConfigRequest`/`ReceiptConfigFormValues` types + `receiptConfigDTOSchema`/`receiptConfigRequestSchema` Zod schemas added to `customer/model/{types,schema}.ts` (fuel surcharge 0-100, 2dp); `mapReceiptConfig` mapper; `emptyReceiptConfigValues`/`receiptConfigToFormValues`/`receiptFormValuesToRequest` form helpers; `getReceiptConfig`/`upsertReceiptConfig` API calls hitting the Plan 02 HTTP endpoints; shared, presentational `ReceiptSettingsForm` component (values + onChange props, no local state) rendering GENERAL SETTINGS + MOBILE RECEIVING (SMARTSCAN) groups per the screenshot, exported via the module barrel. Frontend typechecks (only pre-existing `warehouse.api.test.ts` errors remain). See `.planning/phases/05-customer-receipts-tab-replace-the-empty-available-after-the-/05-04-SUMMARY.md`.
+- Decision: `updateCustomerSchema` omits `receiptConfig` (edit-path persists via the dedicated `upsertReceiptConfig` endpoint, not the customer `PATCH` body).
+- Next: Plan 05 wires `ReceiptSettingsForm` into `CreateCustomerForm.tsx`'s Receipts tab (replacing `PlaceholderPanel`) and into `CustomerTable.tsx`'s edit modal, using this plan's helpers/API for state + persistence.

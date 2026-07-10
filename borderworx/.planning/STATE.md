@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 05
-last_updated: "2026-07-10T13:02:35.581Z"
+last_updated: "2026-07-10T13:08:46.738Z"
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 3
-  percent: 23
+  completed_plans: 4
+  percent: 31
 ---
 
 # Project State — BorderworxWMS
@@ -66,3 +66,6 @@ progress:
 - Decision: `fuelSurchargePercentage` stored as `Decimal(5,2) @default(0)`, converted to `number` via `.toNumber()` in the mapper (D-03).
 - Decision: `GetReceiptConfigUseCase` always returns a fully-defaulted `ReceiptConfig` (never `null`) when no row exists yet, so reads never 404 (D-06).
 - Next: Plan 02 (HTTP layer — controller/routes/`container.ts` wiring) and Plan 03 (atomic create-time persistence in `CreateCustomerUseCase`) build directly on this persistence layer.
+- **05-02 complete** (backend HTTP layer): `ReceiptConfigController` (get/upsert + `toReceiptConfigResponse` shaper) and `createReceiptConfigRoutes` created mirroring `packing-slip-config` exactly; mounted at `/customers/:customerId/receipt-config` in `router.ts` (permission-gated `customers.read`/`customers.update`); `container.ts` wired with `PrismaReceiptConfigRepository`, use-cases, and `receiptConfigController` export. Backend build green. See `.planning/phases/05-customer-receipts-tab-replace-the-empty-available-after-the-/05-02-SUMMARY.md`.
+- Decision: `get()` calls `toReceiptConfigResponse(config)` directly with no null branch, since `GetReceiptConfigUseCase` always returns a defaulted `ReceiptConfig` (D-06) — unlike packing-slip-config's nullable get.
+- Next: Plan 03 (atomic create-time persistence in `CreateCustomerUseCase`) and the frontend Receipts tab (Plans 04/05) build directly on these endpoints.

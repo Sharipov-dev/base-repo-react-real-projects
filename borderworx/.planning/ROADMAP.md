@@ -85,7 +85,7 @@ Plans:
 
 Plans:
 - [x] 05-01-PLAN.md — Backend: CustomerReceiptConfig model/entity/DTO/repo/use-cases + schema push (mirror PackingSlipConfig) (D-01,D-02,D-03,D-04,D-05,D-06) — wave 1
-- [ ] 05-02-PLAN.md — Backend: receipt-config controller + routes + DI wiring + build (D-05,D-06,D-07) — wave 2
+- [x] 05-02-PLAN.md — Backend: receipt-config controller + routes + DI wiring + build (D-05,D-06,D-07) — wave 2
 - [ ] 05-03-PLAN.md — Backend: atomic receipt-config persistence at customer-create time ($transaction) (D-06) — wave 2
 - [ ] 05-04-PLAN.md — Frontend: receipt-config types/schema/API + shared ReceiptSettingsForm component (D-01,D-02,D-03,D-04,D-07) — wave 3
 - [ ] 05-05-PLAN.md — Frontend: wire Receipts tab (create) + edit-modal Receipts section (upsert) (D-06,D-07) — wave 4

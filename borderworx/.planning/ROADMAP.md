@@ -73,7 +73,7 @@ schema change.
 **Plans:** 2 plans in 2 waves
 
 Plans:
-- [ ] 04-01-PLAN.md — Backend: extend createCustomerSchema + CreateCustomerData + atomic $transaction contact creation in prisma-customer.repository (D-01,D-02,D-03,D-05,D-06,D-07) — wave 1
+- [x] 04-01-PLAN.md — Backend: extend createCustomerSchema + CreateCustomerData + atomic $transaction contact creation in prisma-customer.repository (D-01,D-02,D-03,D-05,D-06,D-07) — wave 1
 - [ ] 04-02-PLAN.md — Frontend: Primary Contact section on CreateCustomerForm + schema/type extension + conditional primaryContact assembly (D-01,D-02,D-03,D-04,D-05,D-08) — wave 2
 
 ### Phase 5: Customer Receipts tab: replace the empty 'available after the customer is created' placeholder with the receipt configuration form (available during both create and edit). Renders General Settings (Location Options select, Supplier Options select, Fuel Surcharge Percentage number, Enable suggested putaway checkbox) and Mobile Receiving/SmartScan settings (Receive against ASN, Default quantity=1, Allow move of unconfirmed inventory, Use blind receipts, Display Weight field for receipts checkboxes), matching the provided screenshot; persist these receipt settings with the customer

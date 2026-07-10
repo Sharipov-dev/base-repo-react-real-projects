@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Ready to execute
-last_updated: "2026-07-10T03:39:35.585Z"
+status: Executing Phase 04
+last_updated: "2026-07-10T03:53:39.023Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 13
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 8
 ---
 
 # Project State — BorderworxWMS
@@ -52,3 +52,8 @@ progress:
 
 - Phase 4 added: Customer create — capture Primary Contact (name/phone/email) and auto-create a `customer_contacts` record when provided (only if the contact field is filled). Avoids extending the customers table.
 - Phase 5 added: Customer Receipts tab — replace the empty "available after the customer is created" placeholder with the receipt configuration form (General Settings + Mobile Receiving/SmartScan) available during create and edit, persisted with the customer.
+
+### Phase 04 Progress
+
+- **04-01 complete** (backend): `createCustomerSchema` accepts optional `primaryContact` (firstName/lastName/email required, phone optional); `PrismaCustomerRepository.create()` wraps customer + primary-contact insert in a single `$transaction` (isPrimary:true, rolls back on failure). `CreateCustomerUseCase`, `customer.controller.ts`, `customer.routes.ts`, `container.ts` unchanged (pass-through DTO). See `.planning/phases/04-customer-create-capture-primary-contact-name-phone-email-and/04-01-SUMMARY.md`.
+- Decision: `$transaction` placed in the repository layer (not the use-case), matching the `prisma-receipt.repository.ts` precedent — keeps `CreateCustomerUseCase` a pure pass-through and `CustomerMapper` confined to infrastructure.

@@ -1,80 +1,87 @@
-# Roadmap: BorderworxWMS
+# BorderworxWMS — Roadmap
 
-## Overview
+> The prior `.planning/` tree (Phase 01–02 export rollout, RBAC phase 1) was archived/deleted.
+> This roadmap is re-seeded for the User & Roles activation milestone.
 
-Table Export milestone: ship a reusable Export button + modal that lets users export
-any DataTable to CSV or Excel, then roll that capability out across every DataTable-based
-table in the app. Phase 1 delivered the infrastructure and the first table (Organizations);
-subsequent phases extend it to the remaining tables.
+## Phase 03: User & Roles — Activation Lifecycle + RBAC Gating
 
-## Phases
+**Status:** Planning
+**Goal:** Make the already-built RBAC system actually usable end-to-end: invited users
+transition from `pending` → `active` automatically when they set their password, every
+user is created with a role, and the frontend respects user status and permissions instead
+of surfacing raw `403 Account pending` errors.
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+**Problem being solved:** Admin invites a user → user accepts invite, sets password, logs
+in → but hits "Account pending" on every WMS table. New users are hard-coded to
+`status: 'pending'` (`borderworxWMS/src/application/use-cases/user/create-user.use-case.ts:36`)
+and **no code path ever flips them to `active`**. The "Account pending" text is the backend
+`ForbiddenError(\`Account ${status}\`)` 403 from `require-permission.middleware.ts`, surfaced
+raw in the UI. Compounding gaps: `roleId` is optional (an active, role-less user is still 403'd
+on everything) and the frontend does zero status/role gating.
 
-Decimal phases appear between their surrounding integers in numeric order.
+**Success criteria:**
+- An invited user who sets their password becomes `status: 'active'` without admin intervention.
+- Every newly created user has a role assigned (no role-less users).
+- An active user with a valid role can load WMS tables (no "Account pending").
+- The frontend gates navigation/actions by the current user's permissions and shows a
+  graceful "awaiting activation / no access" state instead of raw 403 text.
+- Existing RBAC enforcement (`requirePermission`, `requireWarehouseScope`) is preserved and reused.
 
-- [x] **Phase 1: Table Export Infrastructure + Organizations** - Export utilities, ExportModal, DataTable wiring, and Organizations table wired
-- [x] **Phase 2: Export Rollout to DataTable Tables** - Wire export onto the 8 DataTable-based tables: locations, customers, users, roles, receipts, items, inventory, and inventory transaction history
-- [ ] **Phase 3: Migrate + Export Legacy Tables** - Migrate warehouses and customer contacts to DataTable, then wire export onto them
+**Requirements:**
+- REQ-RBAC-01 — Backend self-activation endpoint (auth-only, not permission-gated) that flips
+  the authenticated user `pending → active`.
+- REQ-RBAC-02 — Frontend set-password success calls the activation endpoint before redirect.
+- REQ-RBAC-03 — Role is mandatory at user invite/create time (backend DTO + FE form).
+- REQ-RBAC-04 — Current-user endpoint (`/me` or `/auth/me`) returning status + permissionKeys.
+- REQ-RBAC-05 — Frontend permission gating of sidebar nav and per-row/table actions.
+- REQ-RBAC-06 — Graceful pending / no-access UI states; distinct handling of 403 `Account *`.
 
-## Phase Details
+**Depends on:** (RBAC phase 1 — already merged to main; schema + middleware in place)
 
-### Phase 1: Table Export Infrastructure + Organizations
-**Goal**: Build the reusable export stack (CSV/XLSX utilities, ExportModal, DataTable export button + handler, ColumnDef export metadata) and wire it onto the Organizations table.
-**Depends on**: Nothing (first phase)
-**Success Criteria** (what must be TRUE):
-  1. User can click Export on the Organizations table and choose CSV or Excel.
-  2. Export respects currently visible columns and uses each column's export value.
-  3. "All records" export pulls every page, not just the current one.
-**Plans**: 7 plans
-
-Plans:
-- [x] 01-01: Install xlsx dependency
-- [x] 01-02: Export utilities module (toCsv, toXlsx, downloadBlob, fileName)
-- [x] 01-03: Extend ColumnDef with exportValue/exportHeader
-- [x] 01-04: ExportModal component
-- [x] 01-05: Wire export button + state + handler into DataTable
-- [x] 01-06: Wire Organizations table columns + export props
-- [x] 01-07: Page-loop fix for all-records export
-
-### Phase 2: Export Rollout to DataTable Tables
-**Goal**: Wire the existing export stack onto the 8 DataTable-based tables — locations, customers, users, roles, receipts, items, inventory, and inventory transaction history — by adding per-column `exportValue`/`exportHeader` callbacks and passing `exportFileBaseName` + an all-records handler, following the Organizations reference. (Warehouses and customer contacts are deferred to Phase 3 — they are not DataTable-based.)
-**Depends on**: Phase 1
-**Requirements**: SC-1, SC-2, SC-3 (mapped from Success Criteria)
-**Success Criteria** (what must be TRUE):
-  1. User can export each of the 8 tables to CSV or Excel via the Export button.
-  2. Each export respects currently visible columns and uses the same value formatting shown in the table, with FK ids resolved to human-readable names where applicable (e.g. Users roleId, Transactions inventoryId).
-  3. "All records" export pulls every page (page-loop) and respects active table filters, exporting only rows matching the current filter.
-**Plans**: 5 plans
+**Plans:** 6 plans in 3 waves
 
 Plans:
-- [x] 02-01-PLAN.md — Wire export onto Locations + Customers (client-filter-aware; remove dead Customers Export button)
-- [x] 02-02-PLAN.md — Wire export onto Users + Roles (roleId→name resolution; search threading)
-- [x] 02-03-PLAN.md — Wire export onto Receipts + Items (status/search threading; string dates; composite tracking)
-- [x] 02-04-PLAN.md — Wire export onto Inventory + Inventory Transactions (inline-typed; inventoryId label; type/search threading)
-- [x] 02-05-PLAN.md — Phase verify: `npm run build` + manual export smoke-check across all 8 tables
+- [x] 03-01-PLAN.md — Backend auth-only endpoints: POST /api/auth/activate + GET /api/auth/me (REQ-RBAC-01, REQ-RBAC-04) — wave 1
+- [x] 03-02-PLAN.md — Backend: make roleId required in createUserSchema (REQ-RBAC-03) — wave 1
+- [x] 03-03-PLAN.md — Frontend: set-password success calls activation endpoint (REQ-RBAC-02) — wave 2
+- [x] 03-04-PLAN.md — Frontend: current-user provider + can() helper + pending screen + sidebar nav gating (REQ-RBAC-05, REQ-RBAC-06) — wave 2
+- [x] 03-05-PLAN.md — Frontend: Users/Roles table action gating + friendly 403 handling (REQ-RBAC-05, REQ-RBAC-06) — wave 3
+- [x] 03-06-PLAN.md — Frontend: required role select in create-user form (REQ-RBAC-03) — wave 2
 
-### Phase 3: Migrate and Export Legacy Tables
-**Goal**: Convert `WarehouseTable` and `CustomerContactsManager` from legacy `TableHelpers` markup to the shared `DataTable` component, then wire CSV/Excel export onto them following the Phase 2 pattern.
-**Depends on**: Phase 2
+### Phase 4: Customer create: capture Primary Contact (name/phone/email) and auto-create a customer_contacts record when provided
+
+**Goal:** At customer-create time, allow the user to optionally capture a Primary Contact
+(first name, last name, phone, email). When the required set (first + last + email) is
+provided, the backend creates a `customer_contacts` row (`isPrimary: true`) atomically
+with the customer in a single Prisma `$transaction`; when the contact fields are all empty
+the customer is created normally; a partial contact is rejected with a validation error.
+Full-stack, create-only — the customer edit path is untouched, avoiding any customers-table
+schema change.
+
+**Requirements:** (decision-derived — no external REQ IDs)
+- D-01 — Two-field contact name (First name + Last name → firstName/lastName).
+- D-02 — Contact email required whenever a contact is created (honor existing NOT NULL, no migration).
+- D-03 — Single Phone field → contact.phone; mobile not exposed on create.
+- D-04 — Contact email is an independent input, no prefill from company email.
+- D-05 — Contact section optional: create the row only when first+last+email present; partial → validation error; all-empty → no contact.
+- D-06 — Auto-created contact persisted with isPrimary:true.
+- D-07 — Customer + contact creation atomic via a single Prisma $transaction (repository-level, receipt-repo precedent).
+- D-08 — Full-stack, create-only; edit path untouched.
+
+**Depends on:** Phase 3
+
+**Plans:** 2 plans in 2 waves
+
+Plans:
+- [ ] 04-01-PLAN.md — Backend: extend createCustomerSchema + CreateCustomerData + atomic $transaction contact creation in prisma-customer.repository (D-01,D-02,D-03,D-05,D-06,D-07) — wave 1
+- [ ] 04-02-PLAN.md — Frontend: Primary Contact section on CreateCustomerForm + schema/type extension + conditional primaryContact assembly (D-01,D-02,D-03,D-04,D-05,D-08) — wave 2
+
+### Phase 5: Customer Receipts tab: replace the empty 'available after the customer is created' placeholder with the receipt configuration form (available during both create and edit). Renders General Settings (Location Options select, Supplier Options select, Fuel Surcharge Percentage number, Enable suggested putaway checkbox) and Mobile Receiving/SmartScan settings (Receive against ASN, Default quantity=1, Allow move of unconfirmed inventory, Use blind receipts, Display Weight field for receipts checkboxes), matching the provided screenshot; persist these receipt settings with the customer
+
+**Goal:** [To be planned]
 **Requirements**: TBD
-**Success Criteria** (what must be TRUE):
-  1. Warehouses and customer contacts render via the shared DataTable (column visibility, sorting, pagination intact).
-  2. User can export both tables to CSV or Excel via the Export button, matching Phase 2 behavior.
-**Plans**: TBD (run `/gsd-plan-phase 3` to break down)
+**Depends on:** Phase 4
+**Plans:** 0 plans
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 3 to break down)
-
-## Progress
-
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Table Export Infrastructure + Organizations | 7/7 | Complete | 2026-06-24 |
-| 2. Export Rollout to DataTable Tables | 5/5 | Complete | 2026-06-25 |
-| 3. Migrate and Export Legacy Tables | 0/TBD | In progress | - |
+- [ ] TBD (run /gsd-plan-phase 5 to break down)

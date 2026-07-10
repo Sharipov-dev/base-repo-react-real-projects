@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: Executing Phase 04
-last_updated: "2026-07-10T03:59:12.442Z"
+status: Executing Phase 05
+last_updated: "2026-07-10T13:02:35.581Z"
 progress:
   total_phases: 3
   completed_phases: 1
   total_plans: 13
-  completed_plans: 2
-  percent: 15
+  completed_plans: 3
+  percent: 23
 ---
 
 # Project State — BorderworxWMS
@@ -59,3 +59,10 @@ progress:
 - Decision: `$transaction` placed in the repository layer (not the use-case), matching the `prisma-receipt.repository.ts` precedent — keeps `CreateCustomerUseCase` a pure pass-through and `CustomerMapper` confined to infrastructure.
 - **04-02 complete** (frontend): `CreateCustomerRequest`/`createCustomerSchema` mirror the backend's optional `primaryContact` (firstName/lastName/email required, phone optional). `CreateCustomerForm.tsx` basics tab now has a Primary Contact section (First/Last/Phone/Email); `toRequest()` sends `primaryContact` only when any contact field is filled (`hasAnyContact` guard); nested zod errors map to `contact*` field keys. `updateCustomerSchema`/edit form unchanged (create-only, D-08). See `.planning/phases/04-customer-create-capture-primary-contact-name-phone-email-and/04-02-SUMMARY.md`. Phase 04 is now fully implemented end-to-end.
 - Decision: contact email field is fully independent state, never seeded from the company email field (D-04); `primaryContact` is omitted entirely from the request when all four contact fields are empty (D-05).
+
+### Phase 05 Progress
+
+- **05-01 complete** (backend persistence layer): `CustomerReceiptConfig` Prisma model added (1:1 with `Customer`, `customerId @unique`, `onDelete: Cascade`, `@@map("customer_receipt_configs")`), schema pushed to the DB and Prisma client regenerated (`prisma.customerReceiptConfig` delegate confirmed present). Domain entity (`ReceiptConfig`/`UpsertReceiptConfigData`), Zod DTOs (`upsertReceiptConfigSchema`/`receiptConfigParamSchema`/`ReceiptConfigResponseDto`), `ReceiptConfigRepository` interface, `PrismaReceiptConfigRepository` + `ReceiptConfigMapper`, and `GetReceiptConfigUseCase`/`UpsertReceiptConfigUseCase` created, mirroring `CustomerPackingSlipConfig` exactly (D-05). See `.planning/phases/05-customer-receipts-tab-replace-the-empty-available-after-the-/05-01-SUMMARY.md`.
+- Decision: `fuelSurchargePercentage` stored as `Decimal(5,2) @default(0)`, converted to `number` via `.toNumber()` in the mapper (D-03).
+- Decision: `GetReceiptConfigUseCase` always returns a fully-defaulted `ReceiptConfig` (never `null`) when no row exists yet, so reads never 404 (D-06).
+- Next: Plan 02 (HTTP layer — controller/routes/`container.ts` wiring) and Plan 03 (atomic create-time persistence in `CreateCustomerUseCase`) build directly on this persistence layer.

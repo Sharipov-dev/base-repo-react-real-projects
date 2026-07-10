@@ -78,10 +78,14 @@ Plans:
 
 ### Phase 5: Customer Receipts tab: replace the empty 'available after the customer is created' placeholder with the receipt configuration form (available during both create and edit). Renders General Settings (Location Options select, Supplier Options select, Fuel Surcharge Percentage number, Enable suggested putaway checkbox) and Mobile Receiving/SmartScan settings (Receive against ASN, Default quantity=1, Allow move of unconfirmed inventory, Use blind receipts, Display Weight field for receipts checkboxes), matching the provided screenshot; persist these receipt settings with the customer
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Customers can configure receipt settings (Location/Supplier enabled toggles, Fuel Surcharge %, suggested putaway, and Mobile Receiving/SmartScan options) on the Receipts tab during both create and edit, persisted per customer in a dedicated CustomerReceiptConfig table.
+**Requirements**: TBD (decision-derived — D-01..D-07 in 05-CONTEXT.md)
 **Depends on:** Phase 4
-**Plans:** 0 plans
+**Plans:** 5 plans in 4 waves
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 5 to break down)
+- [ ] 05-01-PLAN.md — Backend: CustomerReceiptConfig model/entity/DTO/repo/use-cases + schema push (mirror PackingSlipConfig) (D-01,D-02,D-03,D-04,D-05,D-06) — wave 1
+- [ ] 05-02-PLAN.md — Backend: receipt-config controller + routes + DI wiring + build (D-05,D-06,D-07) — wave 2
+- [ ] 05-03-PLAN.md — Backend: atomic receipt-config persistence at customer-create time ($transaction) (D-06) — wave 2
+- [ ] 05-04-PLAN.md — Frontend: receipt-config types/schema/API + shared ReceiptSettingsForm component (D-01,D-02,D-03,D-04,D-07) — wave 3
+- [ ] 05-05-PLAN.md — Frontend: wire Receipts tab (create) + edit-modal Receipts section (upsert) (D-06,D-07) — wave 4

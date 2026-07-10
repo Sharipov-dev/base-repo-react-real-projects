@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Executing Phase 04
-last_updated: "2026-07-10T03:53:39.023Z"
+last_updated: "2026-07-10T03:59:12.442Z"
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 13
-  completed_plans: 1
-  percent: 8
+  completed_plans: 2
+  percent: 15
 ---
 
 # Project State — BorderworxWMS
@@ -57,3 +57,5 @@ progress:
 
 - **04-01 complete** (backend): `createCustomerSchema` accepts optional `primaryContact` (firstName/lastName/email required, phone optional); `PrismaCustomerRepository.create()` wraps customer + primary-contact insert in a single `$transaction` (isPrimary:true, rolls back on failure). `CreateCustomerUseCase`, `customer.controller.ts`, `customer.routes.ts`, `container.ts` unchanged (pass-through DTO). See `.planning/phases/04-customer-create-capture-primary-contact-name-phone-email-and/04-01-SUMMARY.md`.
 - Decision: `$transaction` placed in the repository layer (not the use-case), matching the `prisma-receipt.repository.ts` precedent — keeps `CreateCustomerUseCase` a pure pass-through and `CustomerMapper` confined to infrastructure.
+- **04-02 complete** (frontend): `CreateCustomerRequest`/`createCustomerSchema` mirror the backend's optional `primaryContact` (firstName/lastName/email required, phone optional). `CreateCustomerForm.tsx` basics tab now has a Primary Contact section (First/Last/Phone/Email); `toRequest()` sends `primaryContact` only when any contact field is filled (`hasAnyContact` guard); nested zod errors map to `contact*` field keys. `updateCustomerSchema`/edit form unchanged (create-only, D-08). See `.planning/phases/04-customer-create-capture-primary-contact-name-phone-email-and/04-02-SUMMARY.md`. Phase 04 is now fully implemented end-to-end.
+- Decision: contact email field is fully independent state, never seeded from the company email field (D-04); `primaryContact` is omitted entirely from the request when all four contact fields are empty (D-05).

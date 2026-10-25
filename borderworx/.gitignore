@@ -1,0 +1,9 @@
+
+# Brainstorming visual companion
+.superpowers/
+
+# Local MCP config (contains secrets)
+.mcp.json
+
+# Generated knowledge-graph output
+graphify-out/

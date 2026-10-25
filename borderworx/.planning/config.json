@@ -1,0 +1,18 @@
+{
+  "workflow": {
+    "research_enabled": false,
+    "plan_checker": true,
+    "nyquist_validation": false,
+    "pattern_mapper": false,
+    "ui_phase": false,
+    "ui_safety_gate": false,
+    "security_enforcement": false,
+    "tdd_mode": false,
+    "mvp_mode": false,
+    "skip_discuss": true
+  },
+  "models": {
+    "planner_model": "claude-opus-4-8",
+    "checker_model": "claude-opus-4-8"
+  }
+}
